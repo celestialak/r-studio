@@ -1,0 +1,57 @@
+# Load necessary packages
+library(dplyr)
+
+# Step 1: Merge the training and the test sets to create one data set.
+
+# Read the training data
+train_data <- read.table("UCI HAR Dataset/train/X_train.txt")
+train_labels <- read.table("UCI HAR Dataset/train/y_train.txt")
+train_subjects <- read.table("UCI HAR Dataset/train/subject_train.txt")
+
+# Read the test data
+test_data <- read.table("UCI HAR Dataset/test/X_test.txt")
+test_labels <- read.table("UCI HAR Dataset/test/y_test.txt")
+test_subjects <- read.table("UCI HAR Dataset/test/subject_test.txt")
+
+# Merge the training and test sets
+merged_data <- rbind(train_data, test_data)
+merged_labels <- rbind(train_labels, test_labels)
+merged_subjects <- rbind(train_subjects, test_subjects)
+
+# Step 2: Extract only the measurements on the mean and standard deviation for each measurement.
+
+# Read the features file
+features <- read.table("UCI HAR Dataset/features.txt")
+mean_std_indices <- grep("mean\\(\\)|std\\(\\)", features$V2)
+
+# Subset the desired columns
+extracted_data <- merged_data[, mean_std_indices]
+
+# Step 3: Use descriptive activity names to name the activities in the data set.
+
+# Read the activity labels file
+activity_labels <- read.table("UCI HAR Dataset/activity_labels.txt")
+merged_labels <- merged_labels %>% mutate(V1 = activity_labels$V2[merged_labels$V1])
+
+# Step 4: Appropriately label the data set with descriptive variable names.
+
+# Set column names for the data set
+colnames(extracted_data) <- features$V2[mean_std_indices]
+colnames(merged_subjects) <- "Subject"
+colnames(merged_labels) <- "Activity"
+
+# Combine all data into one data frame
+cleaned_data <- cbind(merged_subjects, merged_labels, extracted_data)
+
+# Step 5: Create a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+# Create the tidy data set
+tidy_data <- cleaned_data %>%
+  group_by(Subject, Activity) %>%
+  summarise_all(mean)
+
+# Write the tidy data set to a file
+write.table(tidy_data, "tidy_data.txt", row.name = FALSE)
+
+# Print message
+print("Tidy data set created and saved as tidy_data.txt")
